@@ -2,6 +2,7 @@ package com.indcoders.letsplayvideos;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
@@ -12,6 +13,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,7 +38,7 @@ public class HomeActivity extends ActionBarActivity {
 
     @Bind(R.id.grid_view)
     StaggeredGridView grid;
-    ArrayList<String> ids,names,descs;
+    ArrayList<String> ids,names,descs,playlist;
     Bitmap[] imgs;
     ProgressDialog pd;
 
@@ -46,14 +48,27 @@ public class HomeActivity extends ActionBarActivity {
         setContentView(R.layout.activity_home);
         ButterKnife.bind(this);
 
-
         ids = new ArrayList<>();
         names  =  new ArrayList<>();
         descs = new ArrayList<>();
+        playlist = new ArrayList<>();
         ids = getIds();
         pd = new ProgressDialog(this);
         imgs = new Bitmap[ids.size()];
         new getChannelInfo().execute();
+
+        grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Bundle bag = new Bundle();
+                bag.putString("id",ids.get(position));
+                bag.putString("playlist",playlist.get(position));
+                bag.putString("name",names.get(position));
+                Intent i = new Intent(HomeActivity.this, ParentActivity.class);
+                i.putExtras(bag);
+                startActivity(i);
+            }
+        } );
     }
 
     @Override
@@ -76,6 +91,12 @@ public class HomeActivity extends ActionBarActivity {
         ids.add("UCshoKvlZGZ20rVgazZp5vnQ");
         ids.add("UCq54nlcoX-0pLcN5RhxHyug");
         ids.add("UCzH3iADRIq1IJlIXjfNgTpA");
+        ids.add("UCGmnsW623G1r-Chmo5RB4Yw");
+        ids.add("UCH-_hzb2ILSCo9ftVSnrCIQ");
+        ids.add("UCClNRixXlagwAd--5MwJKCw");
+        ids.add("UCcWl6q7rcJ9WoF_Kwmxg23A");
+        ids.add("UC-kOXc3gBwksVfmndSEz7jg");
+        ids.add("UC9CuvdOVfMPvKCiwdGKL3cQ");
 
         return ids;
     }
@@ -110,7 +131,7 @@ public class HomeActivity extends ActionBarActivity {
 
 
             for (String s : ids) {
-                String url = "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=" + s + "&key=AIzaSyCLColf59PzgJq02TJuud3NW3kNqfsZzQk";
+                String url = "https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id=" + s + "&key=AIzaSyCLColf59PzgJq02TJuud3NW3kNqfsZzQk";
                 String jsonStr = null;
 
                 OkHttpClient client = new OkHttpClient();
@@ -135,6 +156,10 @@ public class HomeActivity extends ActionBarActivity {
 
                         // Getting JSON Array node
                         JSONArray dataArray = jsonObj.getJSONArray("items");
+
+                        JSONObject contentData = dataArray.getJSONObject(0).getJSONObject("contentDetails");
+                        JSONObject playlistData = contentData.getJSONObject("relatedPlaylists");
+                        playlist.add(playlistData.getString("uploads"));
 
                         JSONObject snippetData = dataArray.getJSONObject(0).getJSONObject("snippet");
 
