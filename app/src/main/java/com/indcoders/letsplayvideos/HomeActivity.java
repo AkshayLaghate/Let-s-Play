@@ -4,9 +4,11 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -17,6 +19,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.etsy.android.grid.StaggeredGridView;
 import com.squareup.okhttp.OkHttpClient;
@@ -24,11 +27,17 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import com.squareup.picasso.Picasso;
 
+import org.apache.http.conn.util.InetAddressUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -69,6 +78,36 @@ public class HomeActivity extends ActionBarActivity {
                 startActivity(i);
             }
         } );
+
+        Toast.makeText(this,"IP Address : "+getIPAddress(true),Toast.LENGTH_SHORT).show();
+
+    }
+
+    public static String getIPAddress(boolean useIPv4) {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress()) {
+                        String sAddr = addr.getHostAddress().toUpperCase();
+                        boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
+                        if (useIPv4) {
+                            if (isIPv4)
+                                return sAddr;
+                        } else {
+                            if (!isIPv4) {
+                                int delim = sAddr.indexOf('%'); // drop ip6 port suffix
+                                return delim < 0 ? sAddr : sAddr.substring(0, delim);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
@@ -188,6 +227,57 @@ public class HomeActivity extends ActionBarActivity {
             pd.dismiss();
             grid.setAdapter(new GridAdapter());
             grid.invalidateViews();
+            new GetPackage().execute();
+        }
+    }
+
+    public class GetPackage extends AsyncTask<Void,Void,Void>{
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            String url = "https://admin.appnext.com/offerWallApi.aspx?id=4faf7fda-89de-4731-9134-658cff3320d8&cnt=1&cat=Action&type=json&ip="+getIPAddress(true)+"&pbk=app-package";
+            String jsonStr = null;
+
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+                    .url(url)
+                    .build();
+
+            Response response = null;
+
+            try {
+                response = client.newCall(request).execute();
+                jsonStr = response.body().string();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e("Response", "Error: " + e);
+            }
+            Log.e("Response: ", "> " + jsonStr);
+
+            if (jsonStr != null) {
+                try {
+                    JSONObject jsonObj = new JSONObject(jsonStr);
+
+                    // Getting JSON Array node
+                    JSONArray apps = jsonObj.getJSONArray("apps");
+
+                    final String name = apps.getJSONObject(0).getString("title");
+                    final String packageName = apps.getJSONObject(0).getString("androidPackage");
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(HomeActivity.this,name+packageName,Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                } catch (Exception e) {
+
+                }
+            }
+
+            return null;
         }
     }
 
@@ -228,15 +318,10 @@ public class HomeActivity extends ActionBarActivity {
 
                 }
 
-
-
                 ImageView ivThumb = (ImageView) convertView.findViewById(R.id.ivThumb);
                 TextView tvName = (TextView) convertView.findViewById(R.id.tvTitle);
-
-
                 ivThumb.setImageBitmap(imgs[position]);
                 tvName.setText(names.get(position));
-
 
                 return convertView;
 
