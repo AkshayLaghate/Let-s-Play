@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Let\'s Play Videos</string>
+
+    <string name="title_section1">Recent</string>
+    <string name="title_section2">Playlists</string>
+
+
+    <string name="hello_world">Hello world!</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_home">Let\'s Play</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
