@@ -2,6 +2,7 @@ package com.indcoders.letsplayvideos;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.app.WallpaperManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -280,8 +281,5 @@ public class VideosFragment extends Fragment {
         // TODO: Update argument type and name
         public void onFragmentInteraction(Uri uri);
     }
-
-
-
 
 }
